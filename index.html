@@ -1,0 +1,2826 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d5660">
+
+<title>Garmin Route Profile · GPX a JSON</title>
+
+<style>
+:root {
+    color-scheme: light;
+    --ink: #102e36;
+    --muted: #62777c;
+    --teal: #0d5c63;
+    --dark: #083b46;
+    --soft: #e3f2f1;
+    --paper: #fffefa;
+    --line: #d6dfdc;
+    --orange: #e86f3b;
+    --green: #247a50;
+    --red: #b93838;
+    --shadow: 0 18px 50px rgba(15, 52, 60, .12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    background:
+        linear-gradient(
+            #dceff0 0,
+            #f6f3ea 360px
+        );
+    color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+code {
+    border-radius: 5px;
+    background: rgba(13, 92, 99, .1);
+    padding: .1em .35em;
+}
+
+.hero {
+    padding: 54px 20px 88px;
+    background:
+        radial-gradient(
+            circle at 85% 10%,
+            rgba(112, 189, 183, .33),
+            transparent 27%
+        ),
+        linear-gradient(
+            135deg,
+            #092f3d,
+            #0d5c63
+        );
+    color: white;
+}
+
+.hero-inner {
+    width: min(1080px, 100%);
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 30px;
+}
+
+.eyebrow {
+    margin: 0 0 13px;
+    color: #94d3cf;
+    font-size: .75rem;
+    font-weight: 850;
+    letter-spacing: .14em;
+}
+
+h1 {
+    margin: 0 0 17px;
+    max-width: 750px;
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    line-height: .96;
+    letter-spacing: -.055em;
+}
+
+.hero-copy {
+    max-width: 670px;
+    margin: 0;
+    color: #cbe6e5;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+}
+
+.hero code {
+    background: rgba(255, 255, 255, .1);
+    color: white;
+}
+
+.privacy {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    max-width: 280px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 99px;
+    background: rgba(5, 39, 48, .45);
+    padding: 10px 14px;
+    color: #d8eeee;
+    font-size: .8rem;
+}
+
+.privacy i {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #6de0a5;
+    box-shadow: 0 0 0 5px rgba(109, 224, 165, .12);
+}
+
+main {
+    width: min(1080px, calc(100% - 28px));
+    margin: -44px auto 0;
+    position: relative;
+}
+
+.steps {
+    display: flex;
+    align-items: center;
+    max-width: 550px;
+    margin: 0 auto 20px;
+    border: 1px solid rgba(255, 255, 255, .55);
+    border-radius: 99px;
+    background: rgba(255, 254, 250, .96);
+    padding: 8px 12px;
+    box-shadow: var(--shadow);
+}
+
+.step {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 8px;
+    font-weight: 750;
+}
+
+.step b {
+    display: grid;
+    width: 27px;
+    height: 27px;
+    place-items: center;
+    border-radius: 50%;
+    background: #e7ece9;
+    font-size: .75rem;
+}
+
+.step.active {
+    color: var(--dark);
+}
+
+.step.active b,
+.step.done b {
+    background: var(--teal);
+    color: white;
+}
+
+.step-line {
+    height: 1px;
+    flex: 1;
+    background: var(--line);
+}
+
+.card {
+    margin-bottom: 22px;
+    border: 1px solid rgba(27, 70, 76, .12);
+    border-radius: 22px;
+    background: rgba(255, 254, 250, .98);
+    padding: clamp(20px, 4vw, 36px);
+    box-shadow: var(--shadow);
+}
+
+.heading {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 24px;
+}
+
+.heading > span {
+    padding-top: 8px;
+    color: var(--orange);
+    font-size: .75rem;
+    font-weight: 900;
+    letter-spacing: .1em;
+}
+
+.heading h2 {
+    margin: 0 0 3px;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+}
+
+.heading p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.drop {
+    min-height: 180px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    border: 2px dashed #8eb5b4;
+    border-radius: 16px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(223, 241, 239, .68),
+            rgba(234, 246, 247, .27)
+        );
+    padding: 24px;
+    text-align: center;
+    transition: .2s;
+}
+
+.drop:hover,
+.drop.drag {
+    border-color: var(--teal);
+    background: var(--soft);
+}
+
+.drop input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.upload {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 10px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--teal);
+    color: white;
+    font-size: 1.45rem;
+}
+
+.drop strong {
+    font-size: 1.05rem;
+}
+
+.drop small {
+    margin-top: 3px;
+    color: var(--muted);
+}
+
+.file-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    border: 1px solid #bcd8d5;
+    border-radius: 14px;
+    background: var(--soft);
+    padding: 14px 16px;
+}
+
+.file-box small {
+    display: block;
+    color: var(--teal);
+    font-weight: 850;
+    letter-spacing: .08em;
+}
+
+.grid {
+    display: grid;
+    gap: 16px;
+    margin-top: 22px;
+}
+
+.route-grid {
+    grid-template-columns: 1fr 1.25fr;
+}
+
+.github-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+    display: grid;
+    gap: 7px;
+}
+
+.field > span {
+    color: #314e54;
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.field small {
+    color: var(--muted);
+    font-size: .74rem;
+}
+
+.field input {
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    border: 1px solid #cbd7d5;
+    border-radius: 10px;
+    background: white;
+    padding: 0 12px;
+    color: var(--ink);
+    outline: 0;
+}
+
+.field input:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(13, 92, 99, .12);
+}
+
+.range {
+    display: grid;
+    grid-template-columns: 1fr 76px;
+    align-items: center;
+    gap: 12px;
+}
+
+.range input[type="range"] {
+    height: auto;
+    padding: 0;
+    accent-color: var(--teal);
+}
+
+.range input[type="number"] {
+    text-align: center;
+    font-weight: 800;
+}
+
+.aid-block {
+    margin-top: 24px;
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+}
+
+.aid-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.aid-head h3 {
+    margin: 0;
+}
+
+.aid-head p {
+    margin: 2px 0 0;
+    color: var(--muted);
+}
+
+.aid-key {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: .75rem;
+}
+
+.aid-key i {
+    width: 3px;
+    height: 19px;
+    background: var(--green);
+}
+
+.aid-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 11px;
+    margin-top: 15px;
+}
+
+.aid-input {
+    border-left: 4px solid var(--green) !important;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 27px;
+}
+
+.actions.split {
+    justify-content: space-between;
+}
+
+.btn {
+    min-height: 45px;
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 17px;
+    font-weight: 800;
+    transition: .15s;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: .4;
+}
+
+.primary,
+.publish {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    background: var(--orange);
+    color: white;
+}
+
+.primary:hover:not(:disabled) {
+    background: #c94e24;
+}
+
+.secondary {
+    border: 1px solid #aac2c0;
+    background: white;
+    color: var(--dark);
+}
+
+.quiet {
+    background: transparent;
+    color: var(--teal);
+}
+
+.publish {
+    min-height: 52px;
+    background: var(--dark);
+}
+
+.publish:hover:not(:disabled) {
+    background: #052e37;
+}
+
+.status {
+    margin: 0;
+    color: var(--muted);
+    font-size: .86rem;
+    overflow-wrap: anywhere;
+}
+
+.status.error {
+    color: var(--red);
+}
+
+.status.success {
+    color: var(--green);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 17px;
+}
+
+.stat {
+    border: 1px solid #d9e2df;
+    border-radius: 12px;
+    background: #f8faf7;
+    padding: 13px;
+}
+
+.stat strong {
+    display: block;
+    font-size: 1.14rem;
+}
+
+.stat span {
+    color: var(--muted);
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.charts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.chart {
+    min-width: 0;
+    border: 1px solid #d9e2df;
+    border-radius: 15px;
+    background: #f8faf7;
+    padding: 15px;
+}
+
+.chart.after {
+    border-color: #a6cbc6;
+    background: #f2faf8;
+}
+
+.chart-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 9px;
+}
+
+.chart-head span {
+    color: var(--orange);
+    font-size: .63rem;
+    font-weight: 900;
+    letter-spacing: .12em;
+}
+
+.chart-head h3 {
+    margin: 2px 0 0;
+    font-size: 1rem;
+}
+
+.chart-head strong {
+    color: var(--muted);
+    font-size: .76rem;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 240px;
+    border-radius: 9px;
+    background:
+        linear-gradient(
+            #dff1f3,
+            #f8faf7
+        );
+}
+
+.legend {
+    display: flex;
+    gap: 15px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: .7rem;
+}
+
+.legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend i {
+    display: inline-block;
+}
+
+.profile-line {
+    width: 16px;
+    height: 2px;
+    background: #6c4a36;
+}
+
+.aid-line {
+    width: 3px;
+    height: 13px;
+    background: var(--green);
+}
+
+details {
+    margin-top: 17px;
+    border: 1px solid #d9e2df;
+    border-radius: 12px;
+    background: #f8faf7;
+}
+
+summary {
+    padding: 13px 15px;
+    color: var(--dark);
+    font-size: .82rem;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+pre {
+    max-height: 230px;
+    overflow: auto;
+    margin: 0;
+    border-top: 1px solid #d9e2df;
+    padding: 14px;
+    color: #25474e;
+    font: 11px/1.5 Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.token {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+.remember {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-top: 14px;
+    cursor: pointer;
+}
+
+.remember input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--teal);
+}
+
+.remember span {
+    display: grid;
+    gap: 2px;
+}
+
+.remember strong {
+    font-size: .85rem;
+}
+
+.remember small {
+    max-width: 760px;
+    color: var(--muted);
+}
+
+.warning {
+    margin-top: 17px;
+    border-left: 4px solid #d69a30;
+    border-radius: 0 9px 9px 0;
+    background: #fff5da;
+    padding: 12px 15px;
+    color: #72541d;
+    font-size: .79rem;
+}
+
+.warning strong {
+    display: block;
+}
+
+.success-box {
+    display: flex;
+    gap: 12px;
+    margin-top: 19px;
+    border: 1px solid #9ccab0;
+    border-radius: 14px;
+    background: #eaf7ef;
+    padding: 15px;
+}
+
+.success-icon {
+    display: grid;
+    flex: 0 0 auto;
+    width: 31px;
+    height: 31px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--green);
+    color: white;
+    font-weight: 900;
+}
+
+.success-box p {
+    margin: 2px 0;
+    color: #426958;
+}
+
+.success-box a {
+    color: var(--teal);
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.hidden {
+    display: none !important;
+}
+
+footer {
+    padding: 22px 20px 42px;
+    color: #698087;
+    text-align: center;
+    font-size: .75rem;
+}
+
+@media (max-width: 780px) {
+    .hero-inner {
+        display: block;
+    }
+
+    .privacy {
+        margin-top: 22px;
+    }
+
+    .route-grid,
+    .github-grid,
+    .charts {
+        grid-template-columns: 1fr;
+    }
+
+    .aid-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .hero {
+        padding: 40px 15px 76px;
+    }
+
+    main {
+        width: calc(100% - 18px);
+    }
+
+    .steps {
+        padding-inline: 7px;
+    }
+
+    .step {
+        padding-inline: 4px;
+        font-size: .72rem;
+    }
+
+    .card {
+        border-radius: 17px;
+        padding: 18px 15px;
+    }
+
+    .drop {
+        min-height: 150px;
+    }
+
+    .aid-head {
+        display: block;
+    }
+
+    .aid-key {
+        margin-top: 8px;
+    }
+
+    .actions,
+    .actions.split {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    canvas {
+        height: 195px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header class="hero">
+    <div class="hero-inner">
+        <div>
+            <p class="eyebrow">
+                GARMIN EDGE · PERFIL REMOTO V3.1.1
+            </p>
+
+            <h1>
+                Del GPX al Garmin<br>
+                en tres pasos.
+            </h1>
+
+            <p class="hero-copy">
+                Selecciona una ruta, compara el perfil original con el
+                simplificado y publica
+                <code>currentProfile.json</code>
+                sin instalar nada.
+            </p>
+        </div>
+
+        <div class="privacy">
+            <i></i>
+            El GPX se procesa en este dispositivo
+        </div>
+    </div>
+</header>
+
+<main>
+
+<nav class="steps">
+    <button class="step active" data-go="route">
+        <b>1</b> Ruta
+    </button>
+
+    <i class="step-line"></i>
+
+    <button class="step" data-go="preview">
+        <b>2</b> Perfil
+    </button>
+
+    <i class="step-line"></i>
+
+    <button class="step" data-go="github">
+        <b>3</b> Publicar
+    </button>
+</nav>
+
+<section class="card" id="route">
+
+    <div class="heading">
+        <span>01</span>
+
+        <div>
+            <h2>Selecciona el track</h2>
+            <p>
+                El archivo se lee dentro del navegador y no se sube
+                a ningún servidor.
+            </p>
+        </div>
+    </div>
+
+    <label class="drop" id="drop">
+        <input
+            id="file"
+            type="file"
+            accept=".gpx,application/gpx+xml,text/xml,application/xml"
+        >
+
+        <span class="upload">↑</span>
+
+        <strong>Pulsa para elegir un GPX</strong>
+
+        <small>
+            También puedes arrastrarlo aquí desde el PC
+        </small>
+    </label>
+
+    <div class="file-box hidden" id="fileBox">
+        <div>
+            <small>ARCHIVO SELECCIONADO</small>
+            <strong id="fileName"></strong>
+        </div>
+
+        <button class="btn quiet" id="changeFile" type="button">
+            Cambiar
+        </button>
+    </div>
+
+    <div class="grid route-grid">
+
+        <label class="field">
+            <span>Nombre de la ruta</span>
+
+            <input
+                id="routeName"
+                maxlength="60"
+                placeholder="Mi ruta"
+            >
+        </label>
+
+        <label class="field">
+            <span>Puntos del perfil Garmin</span>
+
+            <div class="range">
+                <input
+                    id="range"
+                    type="range"
+                    min="200"
+                    max="250"
+                    value="225"
+                >
+
+                <input
+                    id="points"
+                    type="number"
+                    min="200"
+                    max="250"
+                    value="225"
+                >
+            </div>
+
+            <small>
+                Entre 200 y 250. Recomendado: 225.
+            </small>
+        </label>
+    </div>
+
+    <div class="aid-block">
+
+        <div class="aid-head">
+            <div>
+                <h3>Avituallamientos</h3>
+
+                <p>
+                    Introduce hasta cuatro puntos kilométricos.
+                    Son opcionales.
+                </p>
+            </div>
+
+            <span class="aid-key">
+                <i></i>
+                Marca en el perfil
+            </span>
+        </div>
+
+        <div class="aid-grid">
+
+            <label class="field">
+                <span>A1 · km</span>
+                <input
+                    class="aid-input"
+                    id="aid1"
+                    inputmode="decimal"
+                    placeholder="25"
+                >
+            </label>
+
+            <label class="field">
+                <span>A2 · km</span>
+                <input
+                    class="aid-input"
+                    id="aid2"
+                    inputmode="decimal"
+                    placeholder="63,5"
+                >
+            </label>
+
+            <label class="field">
+                <span>A3 · km</span>
+                <input
+                    class="aid-input"
+                    id="aid3"
+                    inputmode="decimal"
+                    placeholder="101,2"
+                >
+            </label>
+
+            <label class="field">
+                <span>A4 · km</span>
+                <input
+                    class="aid-input"
+                    id="aid4"
+                    inputmode="decimal"
+                    placeholder="140"
+                >
+            </label>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button
+            class="btn primary"
+            id="process"
+            type="button"
+            disabled
+        >
+            Preparar perfil →
+        </button>
+
+        <p class="status" id="processStatus"></p>
+    </div>
+</section>
+
+<section class="card hidden" id="preview">
+
+    <div class="heading">
+        <span>02</span>
+
+        <div>
+            <h2>Comprueba la simplificación</h2>
+
+            <p>
+                La distancia se conserva y la elevación se interpola
+                en puntos uniformes.
+            </p>
+        </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="charts">
+
+        <article class="chart">
+            <div class="chart-head">
+                <div>
+                    <span>ANTES</span>
+                    <h3>GPX original</h3>
+                </div>
+
+                <strong id="beforeCount"></strong>
+            </div>
+
+            <canvas id="beforeChart"></canvas>
+        </article>
+
+        <article class="chart after">
+            <div class="chart-head">
+                <div>
+                    <span>DESPUÉS</span>
+                    <h3>Perfil para Garmin</h3>
+                </div>
+
+                <strong id="afterCount"></strong>
+            </div>
+
+            <canvas id="afterChart"></canvas>
+
+            <div class="legend">
+                <span>
+                    <i class="profile-line"></i>
+                    Elevación
+                </span>
+
+                <span>
+                    <i class="aid-line"></i>
+                    Avituallamiento
+                </span>
+            </div>
+        </article>
+    </div>
+
+    <details>
+        <summary>Ver el JSON que se publicará</summary>
+        <pre id="json"></pre>
+    </details>
+
+    <div class="actions split">
+
+        <button
+            class="btn secondary"
+            id="download"
+            type="button"
+        >
+            Descargar JSON
+        </button>
+
+        <button
+            class="btn primary"
+            type="button"
+            data-go="github"
+        >
+            Continuar a GitHub →
+        </button>
+    </div>
+</section>
+
+<section class="card" id="github">
+
+    <div class="heading">
+        <span>03</span>
+
+        <div>
+            <h2>Publica en GitHub</h2>
+
+            <p>
+                Reemplaza el mismo fichero que consulta el Garmin.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid github-grid">
+
+        <label class="field">
+            <span>Usuario GitHub</span>
+            <input id="owner" value="fsebastian69">
+        </label>
+
+        <label class="field">
+            <span>Repositorio</span>
+            <input id="repo" value="garmin-profile">
+        </label>
+
+        <label class="field">
+            <span>Rama</span>
+            <input id="branch" value="main">
+        </label>
+
+        <label class="field">
+            <span>Ruta del fichero</span>
+            <input id="path" value="currentProfile.json">
+        </label>
+    </div>
+
+    <label class="field" style="margin-top:17px">
+        <span>Token personal de GitHub</span>
+
+        <div class="token">
+            <input
+                id="token"
+                type="password"
+                autocomplete="off"
+                placeholder="github_pat_…"
+            >
+
+            <button
+                class="btn quiet"
+                id="showToken"
+                type="button"
+            >
+                Mostrar
+            </button>
+        </div>
+    </label>
+
+    <label class="remember">
+        <input id="remember" type="checkbox">
+
+        <span>
+            <strong>
+                Recordar el token en este dispositivo
+            </strong>
+
+            <small>
+                Lo guarda sin cifrar en este navegador.
+                Actívalo únicamente en tus dispositivos personales.
+            </small>
+        </span>
+    </label>
+
+    <div class="warning">
+        <strong>Recomendación de seguridad</strong>
+
+        Usa un token fine-grained limitado al repositorio del perfil
+        y con permiso <em>Contents: Read and write</em>.
+    </div>
+
+    <div class="actions">
+        <button
+            class="btn publish"
+            id="publish"
+            type="button"
+            disabled
+        >
+            Publicar currentProfile.json
+        </button>
+
+        <p class="status" id="publishStatus"></p>
+    </div>
+
+    <div class="success-box hidden" id="success">
+        <div class="success-icon">✓</div>
+
+        <div>
+            <strong>Perfil publicado correctamente</strong>
+
+            <p id="successText"></p>
+
+            <a
+                id="rawLink"
+                target="_blank"
+                rel="noopener"
+            >
+                Abrir JSON publicado
+            </a>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<footer>
+    Route Profile V3.1.1 · Conversión local ·
+    Compatible con iPhone, Android, PC y GitHub Pages
+</footer>
+
+<script>
+"use strict";
+
+const EARTH_RADIUS_M = 6371008.8;
+const STORAGE_KEY = "garmin-route-profile-web-v1";
+
+const byId = id => document.getElementById(id);
+const last = array => array[array.length - 1];
+
+const ui = {
+    file: byId("file"),
+    drop: byId("drop"),
+    fileBox: byId("fileBox"),
+    fileName: byId("fileName"),
+    routeName: byId("routeName"),
+    range: byId("range"),
+    points: byId("points"),
+    process: byId("process"),
+    processStatus: byId("processStatus"),
+    preview: byId("preview"),
+    stats: byId("stats"),
+    beforeCount: byId("beforeCount"),
+    afterCount: byId("afterCount"),
+    beforeChart: byId("beforeChart"),
+    afterChart: byId("afterChart"),
+    json: byId("json"),
+    download: byId("download"),
+    owner: byId("owner"),
+    repo: byId("repo"),
+    branch: byId("branch"),
+    path: byId("path"),
+    token: byId("token"),
+    remember: byId("remember"),
+    showToken: byId("showToken"),
+    publish: byId("publish"),
+    publishStatus: byId("publishStatus"),
+    success: byId("success"),
+    successText: byId("successText"),
+    rawLink: byId("rawLink")
+};
+
+const aidInputs = [1, 2, 3, 4].map(
+    number => byId("aid" + number)
+);
+
+const state = {
+    file: null,
+    original: null,
+    simplified: null,
+    aidStationsM: [],
+    payload: null,
+    json: null
+};
+
+function setStatus(node, text, type = "") {
+    node.textContent = text;
+    node.className =
+        "status" +
+        (type ? " " + type : "");
+}
+
+function localName(node) {
+    return (
+        node.localName ||
+        node.nodeName.split(":").pop()
+    );
+}
+
+function haversineMeters(a, b) {
+    const radians = Math.PI / 180;
+
+    const latitudeA = a.lat * radians;
+    const latitudeB = b.lat * radians;
+
+    const latitudeDelta =
+        (b.lat - a.lat) * radians;
+
+    const longitudeDelta =
+        (b.lon - a.lon) * radians;
+
+    const value =
+        Math.sin(latitudeDelta / 2) ** 2 +
+        Math.cos(latitudeA) *
+        Math.cos(latitudeB) *
+        Math.sin(longitudeDelta / 2) ** 2;
+
+    return (
+        2 *
+        EARTH_RADIUS_M *
+        Math.asin(
+            Math.min(
+                1,
+                Math.sqrt(value)
+            )
+        )
+    );
+}
+
+function parseGpx(text) {
+    const documentNode =
+        new DOMParser().parseFromString(
+            text,
+            "application/xml"
+        );
+
+    if (documentNode.querySelector("parsererror")) {
+        throw new Error(
+            "El archivo no contiene un GPX válido."
+        );
+    }
+
+    const nodes = [
+        ...documentNode.getElementsByTagName("*")
+    ].filter(node =>
+        ["trkpt", "rtept"].includes(
+            localName(node)
+        )
+    );
+
+    if (nodes.length < 2) {
+        throw new Error(
+            "El GPX necesita al menos dos puntos."
+        );
+    }
+
+    const raw = nodes.map(node => {
+        const elevationNode = [
+            ...node.children
+        ].find(child =>
+            localName(child) === "ele"
+        );
+
+        const elevation = elevationNode
+            ? Number(elevationNode.textContent)
+            : NaN;
+
+        return {
+            lat: Number(node.getAttribute("lat")),
+            lon: Number(node.getAttribute("lon")),
+            elevation: Number.isFinite(elevation)
+                ? elevation
+                : NaN
+        };
+    });
+
+    if (
+        raw.some(point =>
+            !Number.isFinite(point.lat) ||
+            !Number.isFinite(point.lon)
+        )
+    ) {
+        throw new Error(
+            "El GPX contiene coordenadas no válidas."
+        );
+    }
+
+    const known = raw
+        .map((point, index) =>
+            Number.isFinite(point.elevation)
+                ? index
+                : null
+        )
+        .filter(index => index !== null);
+
+    if (!known.length) {
+        throw new Error(
+            "El GPX no contiene datos de elevación."
+        );
+    }
+
+    for (
+        let index = 0;
+        index <= known[0];
+        index += 1
+    ) {
+        raw[index].elevation =
+            raw[known[0]].elevation;
+    }
+
+    for (
+        let knownIndex = 0;
+        knownIndex < known.length - 1;
+        knownIndex += 1
+    ) {
+        const left = known[knownIndex];
+        const right = known[knownIndex + 1];
+
+        const startElevation =
+            raw[left].elevation;
+
+        const endElevation =
+            raw[right].elevation;
+
+        for (
+            let index = left;
+            index <= right;
+            index += 1
+        ) {
+            const ratio =
+                (index - left) /
+                (right - left);
+
+            raw[index].elevation =
+                startElevation +
+                (
+                    endElevation -
+                    startElevation
+                ) * ratio;
+        }
+    }
+
+    const lastKnown = last(known);
+
+    for (
+        let index = lastKnown;
+        index < raw.length;
+        index += 1
+    ) {
+        raw[index].elevation =
+            raw[lastKnown].elevation;
+    }
+
+    let distanceM = 0;
+
+    const result = raw.map(
+        (point, index) => {
+            if (index > 0) {
+                distanceM +=
+                    haversineMeters(
+                        raw[index - 1],
+                        point
+                    );
+            }
+
+            return {
+                distanceM,
+                elevationM: point.elevation,
+                lat: point.lat,
+                lon: point.lon
+            };
+        }
+    );
+
+    if (distanceM <= 0.5) {
+        throw new Error(
+            "El GPX no contiene una distancia útil."
+        );
+    }
+
+    return result;
+}
+
+function uniformProfile(points, targetPoints) {
+    const totalDistance =
+        last(points).distanceM;
+
+    const result = [];
+    let sourceIndex = 1;
+
+    for (
+        let index = 0;
+        index < targetPoints;
+        index += 1
+    ) {
+        const distanceM =
+            totalDistance *
+            index /
+            (targetPoints - 1);
+
+        while (
+            sourceIndex < points.length - 1 &&
+            points[sourceIndex].distanceM <
+                distanceM
+        ) {
+            sourceIndex += 1;
+        }
+
+        const left =
+            points[sourceIndex - 1];
+
+        const right =
+            points[sourceIndex];
+
+        const span =
+            right.distanceM -
+            left.distanceM;
+
+        const ratio =
+            span <= 0
+                ? 0
+                : (
+                    distanceM -
+                    left.distanceM
+                ) / span;
+
+        result.push({
+            distanceM,
+
+            elevationM:
+                left.elevationM +
+                (
+                    right.elevationM -
+                    left.elevationM
+                ) * ratio,
+
+            lat:
+                left.lat +
+                (
+                    right.lat -
+                    left.lat
+                ) * ratio,
+
+            lon:
+                left.lon +
+                (
+                    right.lon -
+                    left.lon
+                ) * ratio
+        });
+    }
+
+    return result;
+}
+
+function safeRouteName(name) {
+    return (
+        name
+            .normalize("NFD")
+            .replace(
+                /[\u0300-\u036f]/g,
+                ""
+            )
+            .replace(
+                /[^a-z0-9]+/gi,
+                "_"
+            )
+            .replace(
+                /^_+|_+$/g,
+                ""
+            )
+            .slice(0, 24)
+            .toUpperCase() ||
+        "RUTA"
+    );
+}
+
+function base36(value) {
+    const sign =
+        value < 0 ? "-" : "";
+
+    return (
+        sign +
+        Math.abs(value)
+            .toString(36)
+            .toUpperCase()
+    );
+}
+
+function createProfileCode(
+    routeName,
+    profile
+) {
+    const totalM =
+        Math.round(
+            last(profile).distanceM
+        );
+
+    const elevationsDm =
+        profile.map(point =>
+            Math.round(
+                point.elevationM * 10
+            )
+        );
+
+    const deltas =
+        elevationsDm
+            .slice(1)
+            .map(
+                (value, index) =>
+                    value -
+                    elevationsDm[index]
+            );
+
+    const checksum =
+        (
+            totalM +
+            profile.length +
+            last(elevationsDm)
+        ) % 46656;
+
+    return [
+        "RP2",
+        safeRouteName(routeName),
+        base36(totalM),
+        base36(profile.length),
+        base36(elevationsDm[0]),
+        deltas
+            .map(base36)
+            .join("."),
+        base36(checksum)
+    ].join("~");
+}
+
+function parseAidStations(totalDistanceM) {
+    const values = aidInputs
+        .map((input, index) => {
+            const text =
+                input.value.trim();
+
+            if (!text) {
+                return null;
+            }
+
+            const kilometers =
+                Number(
+                    text.replace(",", ".")
+                );
+
+            if (!Number.isFinite(kilometers)) {
+                throw new Error(
+                    "El avituallamiento A" +
+                    (index + 1) +
+                    " no es válido."
+                );
+            }
+
+            const meters =
+                Math.round(
+                    kilometers * 1000
+                );
+
+            if (meters <= 0) {
+                throw new Error(
+                    "A" +
+                    (index + 1) +
+                    " debe estar después del km 0."
+                );
+            }
+
+            if (meters >= totalDistanceM) {
+                throw new Error(
+                    "A" +
+                    (index + 1) +
+                    " está fuera de la ruta."
+                );
+            }
+
+            return meters;
+        })
+        .filter(value => value !== null);
+
+    return [
+        ...new Set(values)
+    ].sort((a, b) => a - b);
+}
+
+function profileStats(points) {
+    let ascentM = 0;
+
+    for (
+        let index = 1;
+        index < points.length;
+        index += 1
+    ) {
+        const delta =
+            points[index].elevationM -
+            points[index - 1].elevationM;
+
+        if (delta > 0) {
+            ascentM += delta;
+        }
+    }
+
+    return {
+        distanceM:
+            last(points).distanceM,
+
+        ascentM,
+
+        minimumM:
+            Math.min(
+                ...points.map(
+                    point => point.elevationM
+                )
+            ),
+
+        maximumM:
+            Math.max(
+                ...points.map(
+                    point => point.elevationM
+                )
+            )
+    };
+}
+
+function buildRemotePayload(
+    routeName,
+    profile,
+    aidStationsM
+) {
+    return {
+        schema: "route-profile/3",
+
+        name: routeName,
+
+        updatedUtc:
+            new Date()
+                .toISOString()
+                .replace(
+                    /\.\d{3}Z$/,
+                    "+00:00"
+                ),
+
+        distanceM:
+            Math.round(
+                last(profile).distanceM
+            ),
+
+        pointCount:
+            profile.length,
+
+        profileCode:
+            createProfileCode(
+                routeName,
+                profile
+            ),
+
+        aidStationsM,
+
+        aidCode:
+            aidStationsM.join(".")
+    };
+}
+
+function drawProfile(
+    canvas,
+    points,
+    aidStationsM = []
+) {
+    const pixelRatio =
+        window.devicePixelRatio || 1;
+
+    const bounds =
+        canvas.getBoundingClientRect();
+
+    const width =
+        Math.max(
+            260,
+            bounds.width
+        );
+
+    const height =
+        Math.max(
+            180,
+            bounds.height
+        );
+
+    const padding = {
+        top: 22,
+        right: 17,
+        bottom: 25,
+        left: 38
+    };
+
+    canvas.width =
+        Math.round(
+            width * pixelRatio
+        );
+
+    canvas.height =
+        Math.round(
+            height * pixelRatio
+        );
+
+    const context =
+        canvas.getContext("2d");
+
+    context.scale(
+        pixelRatio,
+        pixelRatio
+    );
+
+    const chartWidth =
+        width -
+        padding.left -
+        padding.right;
+
+    const chartHeight =
+        height -
+        padding.top -
+        padding.bottom;
+
+    const totalDistanceM =
+        last(points).distanceM;
+
+    const minimum =
+        Math.min(
+            ...points.map(
+                point => point.elevationM
+            )
+        );
+
+    const maximum =
+        Math.max(
+            ...points.map(
+                point => point.elevationM
+            )
+        );
+
+    const elevationRange =
+        Math.max(
+            1,
+            maximum - minimum
+        );
+
+    const coordinates = point => ({
+        x:
+            padding.left +
+            (
+                point.distanceM /
+                totalDistanceM
+            ) * chartWidth,
+
+        y:
+            padding.top +
+            chartHeight -
+            (
+                (
+                    point.elevationM -
+                    minimum
+                ) /
+                elevationRange
+            ) * chartHeight
+    });
+
+    context.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+    context.strokeStyle =
+        "rgba(52,92,98,.12)";
+
+    context.lineWidth = 1;
+
+    for (
+        let row = 0;
+        row <= 3;
+        row += 1
+    ) {
+        const y =
+            padding.top +
+            chartHeight *
+            row /
+            3;
+
+        context.beginPath();
+
+        context.moveTo(
+            padding.left,
+            y
+        );
+
+        context.lineTo(
+            padding.left +
+            chartWidth,
+            y
+        );
+
+        context.stroke();
+    }
+
+    context.beginPath();
+
+    points.forEach(
+        (point, index) => {
+            const position =
+                coordinates(point);
+
+            if (index === 0) {
+                context.moveTo(
+                    position.x,
+                    position.y
+                );
+            } else {
+                context.lineTo(
+                    position.x,
+                    position.y
+                );
+            }
+        }
+    );
+
+    context.lineTo(
+        padding.left +
+        chartWidth,
+        padding.top +
+        chartHeight
+    );
+
+    context.lineTo(
+        padding.left,
+        padding.top +
+        chartHeight
+    );
+
+    context.closePath();
+
+    const fill =
+        context.createLinearGradient(
+            0,
+            padding.top,
+            0,
+            padding.top +
+            chartHeight
+        );
+
+    fill.addColorStop(
+        0,
+        "rgba(214,185,140,.87)"
+    );
+
+    fill.addColorStop(
+        1,
+        "rgba(214,185,140,.27)"
+    );
+
+    context.fillStyle = fill;
+    context.fill();
+
+    context.beginPath();
+
+    points.forEach(
+        (point, index) => {
+            const position =
+                coordinates(point);
+
+            if (index === 0) {
+                context.moveTo(
+                    position.x,
+                    position.y
+                );
+            } else {
+                context.lineTo(
+                    position.x,
+                    position.y
+                );
+            }
+        }
+    );
+
+    context.strokeStyle = "#6c4a36";
+    context.lineWidth = 2;
+    context.stroke();
+
+    aidStationsM.forEach(
+        (distanceM, index) => {
+            const markerX =
+                padding.left +
+                (
+                    distanceM /
+                    totalDistanceM
+                ) * chartWidth;
+
+            context.beginPath();
+
+            context.moveTo(
+                markerX,
+                padding.top + 4
+            );
+
+            context.lineTo(
+                markerX,
+                padding.top +
+                chartHeight
+            );
+
+            context.strokeStyle =
+                "#247a50";
+
+            context.lineWidth = 2;
+            context.stroke();
+
+            context.fillStyle =
+                "#247a50";
+
+            context.font =
+                "700 10px system-ui";
+
+            context.textAlign =
+                markerX >
+                width -
+                padding.right -
+                24
+                    ? "right"
+                    : "left";
+
+            context.fillText(
+                "A" + (index + 1),
+
+                markerX +
+                (
+                    context.textAlign === "left"
+                        ? 4
+                        : -4
+                ),
+
+                padding.top + 11
+            );
+        }
+    );
+
+    context.fillStyle = "#60757c";
+    context.font = "10px system-ui";
+    context.textAlign = "left";
+
+    context.fillText(
+        Math.round(maximum) + " m",
+        4,
+        padding.top + 4
+    );
+
+    context.fillText(
+        Math.round(minimum) + " m",
+        4,
+        padding.top +
+        chartHeight
+    );
+
+    context.fillText(
+        "0 km",
+        padding.left,
+        height - 6
+    );
+
+    context.textAlign = "right";
+
+    context.fillText(
+        (
+            totalDistanceM /
+            1000
+        ).toFixed(1) + " km",
+
+        padding.left +
+        chartWidth,
+
+        height - 6
+    );
+}
+
+function selectFile(file) {
+    if (!file) {
+        return;
+    }
+
+    state.file = file;
+
+    ui.fileName.textContent =
+        file.name;
+
+    ui.routeName.value =
+        file.name.replace(
+            /\.gpx$/i,
+            ""
+        );
+
+    ui.drop.classList.add("hidden");
+
+    ui.fileBox.classList.remove(
+        "hidden"
+    );
+
+    ui.preview.classList.add(
+        "hidden"
+    );
+
+    ui.process.disabled = false;
+    ui.publish.disabled = true;
+
+    ui.success.classList.add(
+        "hidden"
+    );
+
+    setStatus(
+        ui.processStatus,
+        "GPX preparado."
+    );
+}
+
+function updateStep(stepNumber) {
+    document
+        .querySelectorAll(".step")
+        .forEach((item, index) => {
+            item.classList.toggle(
+                "active",
+                index + 1 === stepNumber
+            );
+
+            item.classList.toggle(
+                "done",
+                index + 1 < stepNumber
+            );
+        });
+}
+
+async function processProfile() {
+    try {
+        ui.process.disabled = true;
+
+        setStatus(
+            ui.processStatus,
+            "Leyendo y simplificando…"
+        );
+
+        const targetPoints =
+            Number(ui.points.value);
+
+        if (
+            !Number.isInteger(targetPoints) ||
+            targetPoints < 200 ||
+            targetPoints > 250
+        ) {
+            throw new Error(
+                "Los puntos deben estar entre 200 y 250."
+            );
+        }
+
+        const original =
+            parseGpx(
+                await state.file.text()
+            );
+
+        const simplified =
+            uniformProfile(
+                original,
+                targetPoints
+            );
+
+        const aidStationsM =
+            parseAidStations(
+                last(original).distanceM
+            );
+
+        const routeName =
+            ui.routeName.value.trim() ||
+            state.file.name.replace(
+                /\.gpx$/i,
+                ""
+            );
+
+        const payload =
+            buildRemotePayload(
+                routeName,
+                simplified,
+                aidStationsM
+            );
+
+        const json =
+            JSON.stringify(payload) +
+            "\n";
+
+        Object.assign(
+            state,
+            {
+                original,
+                simplified,
+                aidStationsM,
+                payload,
+                json
+            }
+        );
+
+        const statistics =
+            profileStats(original);
+
+        const aidLabel =
+            aidStationsM.length
+                ? aidStationsM
+                    .map(
+                        value =>
+                            value / 1000 +
+                            " km"
+                    )
+                    .join(" · ")
+                : "Ninguno";
+
+        const statValues = [
+            [
+                "Distancia",
+                (
+                    statistics.distanceM /
+                    1000
+                ).toFixed(1) +
+                " km"
+            ],
+            [
+                "Desnivel +",
+                Math.round(
+                    statistics.ascentM
+                ) +
+                " m"
+            ],
+            [
+                "Elevación",
+                Math.round(
+                    statistics.minimumM
+                ) +
+                "–" +
+                Math.round(
+                    statistics.maximumM
+                ) +
+                " m"
+            ],
+            [
+                "Avituallamientos",
+                aidLabel
+            ]
+        ];
+
+        ui.stats.innerHTML =
+            statValues
+                .map(
+                    ([label, value]) =>
+                        '<div class="stat">' +
+                        "<strong>" +
+                        value +
+                        "</strong>" +
+                        "<span>" +
+                        label +
+                        "</span>" +
+                        "</div>"
+                )
+                .join("");
+
+        ui.beforeCount.textContent =
+            original.length +
+            " puntos";
+
+        ui.afterCount.textContent =
+            simplified.length +
+            " puntos";
+
+        ui.json.textContent =
+            JSON.stringify(
+                payload,
+                null,
+                2
+            );
+
+        ui.preview.classList.remove(
+            "hidden"
+        );
+
+        ui.publish.disabled = false;
+
+        drawProfile(
+            ui.beforeChart,
+            original,
+            aidStationsM
+        );
+
+        drawProfile(
+            ui.afterChart,
+            simplified,
+            aidStationsM
+        );
+
+        updateStep(2);
+
+        setStatus(
+            ui.processStatus,
+            "Perfil preparado correctamente.",
+            "success"
+        );
+
+        ui.preview.scrollIntoView({
+            behavior: "smooth"
+        });
+
+    } catch (error) {
+        setStatus(
+            ui.processStatus,
+            error.message,
+            "error"
+        );
+    } finally {
+        ui.process.disabled =
+            !state.file;
+    }
+}
+
+function downloadJson() {
+    if (!state.json) {
+        return;
+    }
+
+    const url =
+        URL.createObjectURL(
+            new Blob(
+                [state.json],
+                {
+                    type:
+                        "application/json;charset=utf-8"
+                }
+            )
+        );
+
+    const link =
+        document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+        "currentProfile.json";
+
+    link.click();
+
+    setTimeout(
+        () =>
+            URL.revokeObjectURL(url),
+        1000
+    );
+}
+
+function encodeBase64Utf8(text) {
+    const bytes =
+        new TextEncoder().encode(text);
+
+    let binary = "";
+
+    bytes.forEach(byte => {
+        binary +=
+            String.fromCharCode(byte);
+    });
+
+    return btoa(binary);
+}
+
+function encodePath(path) {
+    return path
+        .split("/")
+        .filter(Boolean)
+        .map(encodeURIComponent)
+        .join("/");
+}
+
+function savePreferences() {
+    const preferences = {
+        owner:
+            ui.owner.value.trim(),
+
+        repo:
+            ui.repo.value.trim(),
+
+        branch:
+            ui.branch.value.trim(),
+
+        path:
+            ui.path.value.trim(),
+
+        points:
+            ui.points.value,
+
+        remember:
+            ui.remember.checked,
+
+        token:
+            ui.remember.checked
+                ? ui.token.value.trim()
+                : ""
+    };
+
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(preferences)
+    );
+}
+
+function loadPreferences() {
+    try {
+        const preferences =
+            JSON.parse(
+                localStorage.getItem(
+                    STORAGE_KEY
+                ) || "{}"
+            );
+
+        ui.owner.value =
+            preferences.owner ||
+            ui.owner.value;
+
+        ui.repo.value =
+            preferences.repo ||
+            ui.repo.value;
+
+        ui.branch.value =
+            preferences.branch ||
+            ui.branch.value;
+
+        ui.path.value =
+            preferences.path ||
+            ui.path.value;
+
+        const targetPoints =
+            Math.min(
+                250,
+                Math.max(
+                    200,
+                    Number(
+                        preferences.points
+                    ) || 225
+                )
+            );
+
+        ui.points.value =
+            targetPoints;
+
+        ui.range.value =
+            targetPoints;
+
+        ui.remember.checked =
+            Boolean(
+                preferences.remember
+            );
+
+        ui.token.value =
+            preferences.remember &&
+            preferences.token
+                ? preferences.token
+                : "";
+
+    } catch {
+        localStorage.removeItem(
+            STORAGE_KEY
+        );
+    }
+}
+
+async function publishProfile() {
+    if (!state.json) {
+        return;
+    }
+
+    const owner =
+        ui.owner.value.trim();
+
+    const repo =
+        ui.repo.value.trim();
+
+    const branch =
+        ui.branch.value.trim() ||
+        "main";
+
+    const path =
+        ui.path.value.trim() ||
+        "currentProfile.json";
+
+    const token =
+        ui.token.value.trim();
+
+    if (
+        !owner ||
+        !repo ||
+        !token
+    ) {
+        setStatus(
+            ui.publishStatus,
+            "Completa usuario, repositorio y token.",
+            "error"
+        );
+
+        return;
+    }
+
+    savePreferences();
+
+    const endpoint =
+        "https://api.github.com/repos/" +
+        encodeURIComponent(owner) +
+        "/" +
+        encodeURIComponent(repo) +
+        "/contents/" +
+        encodePath(path);
+
+    const headers = {
+        Accept:
+            "application/vnd.github+json",
+
+        Authorization:
+            "Bearer " + token,
+
+        "X-GitHub-Api-Version":
+            "2022-11-28"
+    };
+
+    try {
+        ui.publish.disabled = true;
+
+        ui.success.classList.add(
+            "hidden"
+        );
+
+        setStatus(
+            ui.publishStatus,
+            "Comprobando GitHub…"
+        );
+
+        let sha = null;
+
+        const getResponse =
+            await fetch(
+                endpoint +
+                "?ref=" +
+                encodeURIComponent(branch),
+                {
+                    headers
+                }
+            );
+
+        if (getResponse.ok) {
+            const existing =
+                await getResponse.json();
+
+            sha =
+                existing.sha ||
+                null;
+
+        } else if (
+            getResponse.status !== 404
+        ) {
+            throw new Error(
+                "GitHub devolvió " +
+                getResponse.status +
+                ": " +
+                await getResponse.text()
+            );
+        }
+
+        setStatus(
+            ui.publishStatus,
+            "Publicando el perfil…"
+        );
+
+        const requestBody = {
+            message:
+                "Actualizar perfil Garmin: " +
+                state.payload.name,
+
+            content:
+                encodeBase64Utf8(
+                    state.json
+                ),
+
+            branch
+        };
+
+        if (sha) {
+            requestBody.sha = sha;
+        }
+
+        const putResponse =
+            await fetch(
+                endpoint,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        ...headers,
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            requestBody
+                        )
+                }
+            );
+
+        if (!putResponse.ok) {
+            throw new Error(
+                "GitHub devolvió " +
+                putResponse.status +
+                ": " +
+                await putResponse.text()
+            );
+        }
+
+        const rawUrl =
+            "https://raw.githubusercontent.com/" +
+            encodeURIComponent(owner) +
+            "/" +
+            encodeURIComponent(repo) +
+            "/" +
+            encodeURIComponent(branch) +
+            "/" +
+            encodePath(path);
+
+        ui.rawLink.href =
+            rawUrl +
+            "?t=" +
+            Date.now();
+
+        ui.successText.textContent =
+            state.payload.name +
+            " · " +
+            (
+                state.payload.distanceM /
+                1000
+            ).toFixed(1) +
+            " km · " +
+            state.payload.pointCount +
+            " puntos";
+
+        ui.success.classList.remove(
+            "hidden"
+        );
+
+        setStatus(
+            ui.publishStatus,
+            "Publicación completada.",
+            "success"
+        );
+
+        updateStep(3);
+
+    } catch (error) {
+        setStatus(
+            ui.publishStatus,
+            error.message,
+            "error"
+        );
+
+    } finally {
+        ui.publish.disabled =
+            !state.json;
+    }
+}
+
+ui.file.addEventListener(
+    "change",
+    event =>
+        selectFile(
+            event.target.files[0]
+        )
+);
+
+byId("changeFile").addEventListener(
+    "click",
+    () => ui.file.click()
+);
+
+[
+    "dragenter",
+    "dragover"
+].forEach(eventName => {
+    ui.drop.addEventListener(
+        eventName,
+        event => {
+            event.preventDefault();
+
+            ui.drop.classList.add(
+                "drag"
+            );
+        }
+    );
+});
+
+[
+    "dragleave",
+    "drop"
+].forEach(eventName => {
+    ui.drop.addEventListener(
+        eventName,
+        event => {
+            event.preventDefault();
+
+            ui.drop.classList.remove(
+                "drag"
+            );
+        }
+    );
+});
+
+ui.drop.addEventListener(
+    "drop",
+    event =>
+        selectFile(
+            event.dataTransfer.files[0]
+        )
+);
+
+ui.range.addEventListener(
+    "input",
+    () => {
+        ui.points.value =
+            ui.range.value;
+    }
+);
+
+ui.points.addEventListener(
+    "input",
+    () => {
+        const value =
+            Number(ui.points.value);
+
+        if (
+            value >= 200 &&
+            value <= 250
+        ) {
+            ui.range.value =
+                value;
+        }
+    }
+);
+
+ui.process.addEventListener(
+    "click",
+    processProfile
+);
+
+ui.download.addEventListener(
+    "click",
+    downloadJson
+);
+
+ui.publish.addEventListener(
+    "click",
+    publishProfile
+);
+
+ui.showToken.addEventListener(
+    "click",
+    () => {
+        const showing =
+            ui.token.type === "text";
+
+        ui.token.type =
+            showing
+                ? "password"
+                : "text";
+
+        ui.showToken.textContent =
+            showing
+                ? "Mostrar"
+                : "Ocultar";
+    }
+);
+
+ui.remember.addEventListener(
+    "change",
+    () => {
+        if (!ui.remember.checked) {
+            try {
+                const preferences =
+                    JSON.parse(
+                        localStorage.getItem(
+                            STORAGE_KEY
+                        ) || "{}"
+                    );
+
+                preferences.remember =
+                    false;
+
+                preferences.token = "";
+
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(
+                        preferences
+                    )
+                );
+
+            } catch {
+                localStorage.removeItem(
+                    STORAGE_KEY
+                );
+            }
+        }
+    }
+);
+
+document
+    .querySelectorAll("[data-go]")
+    .forEach(button => {
+        button.addEventListener(
+            "click",
+            () => {
+                const target =
+                    byId(
+                        button.dataset.go
+                    );
+
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: "smooth"
+                    });
+                }
+            }
+        );
+    });
+
+window.addEventListener(
+    "resize",
+    () => {
+        if (!state.original) {
+            return;
+        }
+
+        drawProfile(
+            ui.beforeChart,
+            state.original,
+            state.aidStationsM
+        );
+
+        drawProfile(
+            ui.afterChart,
+            state.simplified,
+            state.aidStationsM
+        );
+    }
+);
+
+loadPreferences();
+</script>
+
+</body>
+</html>
