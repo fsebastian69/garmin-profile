@@ -1597,6 +1597,86 @@ function createProfileCode(
     ].join("~");
 }
 
+
+/*
+ * Codifica las coordenadas de los mismos puntos del perfil.
+ *
+ * Formato RG1:
+ * RG1~cantidad~latitudInicial~longitudInicial~dLat.dLon,...~checksum
+ *
+ * Las coordenadas se guardan como enteros de 5 decimales y los
+ * incrementos se escriben en base 36. Esto reduce mucho el tamaño
+ * frente a publicar arrays JSON de latitud y longitud.
+ */
+function createGpsCode(profile) {
+    const coordinateScale = 100000;
+
+    const coordinates =
+        profile.map(point => ({
+            lat: Math.round(
+                point.lat * coordinateScale
+            ),
+            lon: Math.round(
+                point.lon * coordinateScale
+            )
+        }));
+
+    if (coordinates.length < 2) {
+        throw new Error(
+            "No hay suficientes puntos para generar gpsCode."
+        );
+    }
+
+    const first = coordinates[0];
+    const deltas = [];
+
+    /*
+     * El checksum incluye todos los incrementos para detectar un
+     * código incompleto o alterado durante la descarga.
+     */
+    let checksum =
+        coordinates.length +
+        first.lat * 3 +
+        first.lon * 5;
+
+    for (
+        let index = 1;
+        index < coordinates.length;
+        index += 1
+    ) {
+        const deltaLat =
+            coordinates[index].lat -
+            coordinates[index - 1].lat;
+
+        const deltaLon =
+            coordinates[index].lon -
+            coordinates[index - 1].lon;
+
+        deltas.push(
+            base36(deltaLat) +
+            "." +
+            base36(deltaLon)
+        );
+
+        checksum +=
+            deltaLat * 7 +
+            deltaLon * 11 +
+            index;
+    }
+
+    checksum =
+        ((checksum % 46656) + 46656) % 46656;
+
+    return [
+        "RG1",
+        base36(coordinates.length),
+        base36(first.lat),
+        base36(first.lon),
+        deltas.join(","),
+        base36(checksum)
+    ].join("~");
+}
+
 function parseAidStations(totalDistanceM) {
     const values = aidInputs
         .map((input, index) => {
@@ -1695,7 +1775,7 @@ function buildRemotePayload(
     aidStationsM
 ) {
     return {
-        schema: "route-profile/3",
+        schema: "route-profile/4",
 
         name: routeName,
 
@@ -1720,6 +1800,11 @@ function buildRemotePayload(
                 routeName,
                 profile
             ),
+
+        gpsCode:
+            createGpsCode(profile),
+
+        gpsCoordinateScale: 100000,
 
         aidStationsM,
 
